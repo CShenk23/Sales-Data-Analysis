@@ -1,0 +1,251 @@
+// Power BI DAX Measure Pack
+// Project: Global Skincare and Beauty E-Store Analysis
+// Paste calculated tables using Modeling > New table.
+// Paste measures using Modeling > New measure.
+// Recommended: create the "Measure Table" calculated table first and store measures there.
+
+// CALCULATED TABLE 1
+DateTable =
+ADDCOLUMNS (
+    CALENDAR (
+        MIN ( fact_orders_clean[Order_Date] ),
+        MAX ( fact_orders_clean[Order_Date] )
+    ),
+    "Year", YEAR ( [Date] ),
+    "Quarter_Num", QUARTER ( [Date] ),
+    "Quarter", "Q" & QUARTER ( [Date] ),
+    "Month_Num", MONTH ( [Date] ),
+    "Month_Name", FORMAT ( [Date], "MMMM" ),
+    "Year_Month", FORMAT ( [Date], "YYYY-MM" ),
+    "YearMonthSort", YEAR ( [Date] ) * 100 + MONTH ( [Date] ),
+    "Year_Quarter", FORMAT ( [Date], "YYYY" ) & "-Q" & QUARTER ( [Date] ),
+    "YearQuarterSort", YEAR ( [Date] ) * 10 + QUARTER ( [Date] ),
+    "Season",
+        SWITCH (
+            TRUE (),
+            MONTH ( [Date] ) IN { 12, 1, 2 }, "Winter",
+            MONTH ( [Date] ) IN { 3, 4, 5 }, "Spring",
+            MONTH ( [Date] ) IN { 6, 7, 8 }, "Summer",
+            "Fall"
+        ),
+    "Season_Num",
+        SWITCH (
+            TRUE (),
+            MONTH ( [Date] ) IN { 12, 1, 2 }, 1,
+            MONTH ( [Date] ) IN { 3, 4, 5 }, 2,
+            MONTH ( [Date] ) IN { 6, 7, 8 }, 3,
+            4
+        )
+)
+
+// CALCULATED TABLE 2
+YearTable =
+DISTINCT (
+    SELECTCOLUMNS (
+        DateTable,
+        "Year", DateTable[Year]
+    )
+)
+
+// OPTIONAL MEASURE HOLDER TABLE
+Measure Table =
+DATATABLE (
+    "Measure Holder", STRING,
+    {
+        { "Measures" }
+    }
+)
+
+// MEASURES
+Revenue =
+SUM ( fact_orders_clean[Sales] )
+
+Profit =
+SUM ( fact_orders_clean[Profit] )
+
+Profit Margin =
+DIVIDE ( [Profit], [Revenue] )
+
+Orders =
+DISTINCTCOUNT ( fact_orders_clean[Order_ID] )
+
+Customers =
+DISTINCTCOUNT ( fact_orders_clean[Customer_ID] )
+
+Quantity Sold =
+SUM ( fact_orders_clean[Quantity] )
+
+Average Order Value =
+DIVIDE ( [Revenue], [Orders] )
+
+Average Profit Per Order =
+DIVIDE ( [Profit], [Orders] )
+
+Average Discount =
+AVERAGE ( fact_orders_clean[Discount] )
+
+Revenue YTD =
+TOTALYTD ( [Revenue], DateTable[Date] )
+
+Profit YTD =
+TOTALYTD ( [Profit], DateTable[Date] )
+
+Revenue PY =
+CALCULATE (
+    [Revenue],
+    DATEADD ( DateTable[Date], -1, YEAR )
+)
+
+Profit PY =
+CALCULATE (
+    [Profit],
+    DATEADD ( DateTable[Date], -1, YEAR )
+)
+
+Revenue YoY Change =
+[Revenue] - [Revenue PY]
+
+Profit YoY Change =
+[Profit] - [Profit PY]
+
+Revenue YoY % =
+DIVIDE ( [Revenue YoY Change], [Revenue PY] )
+
+Profit YoY % =
+DIVIDE ( [Profit YoY Change], [Profit PY] )
+
+Target Profit Margin =
+0.15
+
+Target Market Revenue =
+400000
+
+Target Overall Growth =
+0.20
+
+Target Corporate Growth =
+0.30
+
+Growth Target =
+IF (
+    SELECTEDVALUE ( fact_orders_clean[Segment] ) = "Corporate",
+    [Target Corporate Growth],
+    [Target Overall Growth]
+)
+
+Meets Profit Margin Target =
+IF ( [Profit Margin] >= [Target Profit Margin], 1, 0 )
+
+Meets Market Revenue Target =
+IF ( [Revenue] >= [Target Market Revenue], 1, 0 )
+
+Meets Growth Target =
+IF ( [Revenue YoY %] >= [Growth Target], 1, 0 )
+
+Revenue Gap to Market Target =
+[Revenue] - [Target Market Revenue]
+
+Repeat Customers =
+CALCULATE (
+    DISTINCTCOUNT ( fact_orders_clean[Customer_ID] ),
+    dim_customer[Is_Repeat_Customer] = 1
+)
+
+Repeat Customer Rate =
+DIVIDE ( [Repeat Customers], [Customers] )
+
+New Customers =
+[Customers] - [Repeat Customers]
+
+Returning Customers =
+CALCULATE (
+    DISTINCTCOUNT ( fact_customer_year[Customer_ID] ),
+    fact_customer_year[Returning_From_Prior_Year] = 1
+)
+
+Annual Active Customers =
+DISTINCTCOUNT ( fact_customer_year[Customer_ID] )
+
+Returning Customer Rate =
+DIVIDE ( [Returning Customers], [Annual Active Customers] )
+
+New Customer Years =
+[Annual Active Customers] - [Returning Customers]
+
+Unique Products Sold =
+DISTINCTCOUNT ( fact_orders_clean[Product_Key] )
+
+Revenue Per Product =
+DIVIDE ( [Revenue], [Unique Products Sold] )
+
+Profit Per Product =
+DIVIDE ( [Profit], [Unique Products Sold] )
+
+Quantity Per Order =
+DIVIDE ( [Quantity Sold], [Orders] )
+
+Discounted Orders =
+CALCULATE (
+    [Orders],
+    fact_orders_clean[Discount] > 0
+)
+
+Discounted Revenue =
+CALCULATE (
+    [Revenue],
+    fact_orders_clean[Discount] > 0
+)
+
+No Discount Revenue =
+CALCULATE (
+    [Revenue],
+    fact_orders_clean[Discount] = 0
+)
+
+High Discount Revenue =
+CALCULATE (
+    [Revenue],
+    fact_orders_clean[Discount] >= 0.3
+)
+
+High Discount Profit =
+CALCULATE (
+    [Profit],
+    fact_orders_clean[Discount] >= 0.3
+)
+
+High Discount Profit Margin =
+DIVIDE ( [High Discount Profit], [High Discount Revenue] )
+
+Discounted Profit Margin =
+DIVIDE (
+    CALCULATE ( [Profit], fact_orders_clean[Discount] > 0 ),
+    [Discounted Revenue]
+)
+
+No Discount Profit Margin =
+DIVIDE (
+    CALCULATE ( [Profit], fact_orders_clean[Discount] = 0 ),
+    [No Discount Revenue]
+)
+
+Revenue Label =
+FORMAT ( [Revenue], "$#,0" )
+
+Profit Label =
+FORMAT ( [Profit], "$#,0" )
+
+Profit Margin Label =
+FORMAT ( [Profit Margin], "0.0%" )
+
+Revenue YoY Label =
+FORMAT ( [Revenue YoY %], "0.0%" )
+
+Target Status =
+SWITCH (
+    TRUE (),
+    [Profit Margin] >= [Target Profit Margin] && [Revenue YoY %] >= [Growth Target], "Strong",
+    [Profit Margin] >= [Target Profit Margin], "Profitable",
+    [Revenue YoY %] >= [Growth Target], "Growing",
+    "Needs Attention"
+)
