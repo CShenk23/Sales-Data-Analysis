@@ -1,0 +1,16 @@
+{
+  "name": "Skincare Beauty Clean",
+  "dataColors": [
+    "#1F4E78",
+    "#4F81BD",
+    "#9BBB59",
+    "#8064A2",
+    "#F79646",
+    "#C0504D",
+    "#4BACC6",
+    "#92A9CF"
+  ],
+  "background": "#FFFFFF",
+  "foreground": "#1F2937",
+  "tableAccent": "#1F4E78"
+}
