@@ -1,0 +1,70 @@
+Power BI Final Relationship Map
+Project: Global Skincare and Beauty E-Store Analysis
+
+Load these tables:
+- fact_orders_clean
+- dim_customer
+- dim_product
+- fact_customer_year
+
+Create these calculated tables in Power BI:
+- DateTable
+- YearTable
+- optional Measure Table
+
+Ignore or hide:
+- dim_date
+- dim_geo
+- summary tables
+
+Final relationship list:
+1. DateTable[Date] -> fact_orders_clean[Order_Date]
+   Cardinality: One-to-many
+   Cross filter direction: Single
+   Active: Yes
+
+2. dim_customer[Customer_ID] -> fact_orders_clean[Customer_ID]
+   Cardinality: One-to-many
+   Cross filter direction: Single
+   Active: Yes
+
+3. dim_product[Product_Key] -> fact_orders_clean[Product_Key]
+   Cardinality: One-to-many
+   Cross filter direction: Single
+   Active: Yes
+
+4. YearTable[Year] -> DateTable[Year]
+   Cardinality: One-to-many
+   Cross filter direction: Single
+   Active: Yes
+
+5. YearTable[Year] -> fact_customer_year[Year]
+   Cardinality: One-to-many
+   Cross filter direction: Single
+   Active: Yes
+
+6. dim_customer[Customer_ID] -> fact_customer_year[Customer_ID]
+   Cardinality: One-to-many
+   Cross filter direction: Single
+   Active: Yes
+
+Model diagram:
+                  YearTable
+                   /      \
+                  /        \
+             DateTable      fact_customer_year
+                 |                  ^
+                 |                  |
+                 v                  |
+         fact_orders_clean <-------- dim_customer
+                 ^
+                 |
+            dim_product
+
+Do not create these relationships:
+- fact_customer_year to DateTable
+- fact_customer_year to fact_orders_clean
+- dim_date to anything
+- dim_geo to anything
+- any many-to-many relationships
+- any Both-direction relationships
